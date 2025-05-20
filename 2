@@ -1,0 +1,51 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "test.h"
+#include "validation.h" // Assuming this header provides input validation functions
+
+#define LEN 20
+
+    /* General instruction
+    1. Test individual Problem by commenting rest of the functions
+    2. First crash the code with different set of inputs
+    3. Note down the type of issue (validation, buffer overflow, stack smashing, integer overflow etc.
+    4. Use appropriate function from validation.h file to mitigate the issue
+    5. Test again whether the issues are resolved
+    */
+//2410459041 -AMRUTHESH
+
+int main() {
+    int choice;
+    printf("=== Insecure App ===\n");
+    printf("1. Register\n2. Login\n3. Information Disclosure\n4. Unsafe File Access\nEnter choice: ");
+    // scanf("%d", &choice); // Original vulnerable line
+
+    // Conceptual fix using a hypothetical function from validation.h
+    // This assumes validation.h has a function to safely read an integer and handle invalid input.
+    // Without the content of validation.h, this is a placeholder.
+    if (scanf("%d", &choice) != 1) { // Check if scanf successfully read an integer
+        printf("Invalid input. Please enter a number.\n");
+        while (getchar() != '\n'); // Clear the input buffer
+        return 1; // Exit or handle error
+    }
+
+    switch (choice) {
+        case 1:
+            register_user(); // Problem 1 : (3 + 3 = 6 Marks)
+            break;
+        case 2:
+            login_user(); // (4 +  4 = 8 Marks)
+            break;
+        case 3:
+            secret_area(); // (4 +  4 = 8 Marks)
+            break;
+        case 4:
+            unsafe_file_access(); // (4 +  4 = 8 Marks)
+            break;
+        default:
+            printf("Invalid choice.\n"); // Already handled by the range check below (implicitly by switch)
+    }
+
+    return 0;
+}
