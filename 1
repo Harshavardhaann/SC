@@ -1,0 +1,110 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include "test.h"
+#include "validation.h"
+
+struct User {
+    char username[20];
+    char password[20];
+    char email[50];
+    int age;
+};
+
+//Exploit the vulnerabilities and mention the mitigation techniques and
+// fix the code using validation.c file
+void register_user() {
+    struct User u;
+    char confirm[20];
+
+    printf("Enter Username: ");
+    gets(u.username); // Vulnerability: Buffer Overflow - 'gets()' does not perform bounds checking. A user can input more than 20 characters, overflowing the 'username' buffer and potentially overwriting adjacent memory, leading to crashes or arbitrary code execution.
+
+    printf("Enter Password: ");
+    gets(u.password); // Vulnerability: Buffer Overflow - Similar to 'username', 'gets()' here can lead to an overflow if the password input exceeds 20 characters.
+
+    printf("Confirm Password: ");
+    gets(confirm); // Vulnerability: Buffer Overflow - 'confirm' is also vulnerable to buffer overflow.
+
+    /* make sure only 3 attempts are given */
+
+    if (strcmp(u.password, confirm) != 0) {
+        printf("Passwords do not match!\n");
+        return;
+    }
+
+    printf("Enter Age: ");
+    scanf("%d", &u.age); // Vulnerability: Integer Overflow (less likely in this specific context for age, but still a concern) - If a very large number is entered, it could potentially cause an integer overflow if 'age' were used in calculations where the result exceeds the maximum value of an 'int'.
+
+    int bonus = u.age * 1000; // Vulnerability: Integer Overflow - If 'u.age' is sufficiently large, 'u.age * 1000' could result in an integer overflow, leading to an incorrect 'bonus' value.
+    printf("Bonus: %d\n", bonus);
+
+    printf("Enter Email: ");
+    gets(u.email); // Vulnerability: Buffer Overflow - 'u.email' is vulnerable to buffer overflow due to 'gets()'. An input larger than 50 characters can overflow this buffer.
+
+    printf("Registration Complete");
+}
+
+//Exploit the vulnerabilities and mention the mitigation techniques and
+// fix the code using validation.c file
+void login_user() {
+    char input_username[20];
+    char input_password[20];
+
+    printf("Username: ");
+    scanf("%s", input_username); // Vulnerability: Buffer Overflow - 'scanf("%s", ...)' does not prevent buffer overflows if the input string is longer than the allocated buffer size (20 characters in this case).
+
+    printf("Password: ");
+    scanf("%s", input_password); // Vulnerability: Buffer Overflow - Similar to 'input_username', 'input_password' is vulnerable to buffer overflow.
+
+    printf("Hello ");
+    printf(input_username); // Vulnerability: Format String Vulnerability - If 'input_username' contains format specifiers (e.g., "%x", "%s", "%n"), an attacker can use this to read from or write to arbitrary memory locations, leading to information disclosure or arbitrary code execution.
+
+    // Restrict number of login attempts and ensure password in minimum 8 character
+    // and maximum of 15. Password should contain atleast 1 char in uppercase, 1 number and
+    // 1 symbol
+
+    if (strcmp(input_username, "admin") == 0 && strcmp(input_password, "1234") == 0) { // Vulnerability: Hardcoded Credentials - The username "admin" and password "1234" are hardcoded. This is a security risk as they are easily discoverable and cannot be changed without modifying the code.
+        printf("\nAccess granted.\n");
+
+
+        FILE *fp = fopen("logins.txt", "w"); // Vulnerability: Insecure File Permissions / Overwriting - Opening the file in "w" mode will overwrite any existing "logins.txt" file. Depending on the context, this could be used by an attacker to delete legitimate log data. Also, the file permissions for "logins.txt" are not explicitly set, which could lead to sensitive information being accessible to unauthorized users if default permissions are too lax.
+        if (fp) {
+            fprintf(fp, "User logged in: %s\n", input_username); // Vulnerability: Log Forgery/Injection - If 'input_username' contains newline characters or other control characters, an attacker could inject false log entries or manipulate the log file.
+            fclose(fp);
+        }
+    } else {
+        printf("\nAccess denied.\n");
+    }
+}
+// Access or erase the secret data with user_input variable and mention the mitigation techniques
+// how do you make the code secure
+void secret_area() {
+    char secret_data[32] = "SECRET_API_KEY=ABC123SECRET!";  // Hidden data
+    char user_input[15];
+
+    printf("Enter your name: ");
+    scanf("%s", user_input); // Vulnerability: Buffer Overflow - 'user_input' is vulnerable to buffer overflow if the input string exceeds 15 characters. This could potentially overwrite parts of 'secret_data' or other stack variables.
+
+    printf("Hello, %s!\n", user_input); // Vulnerability: Format String Vulnerability (if 'user_input' can be crafted by an attacker to include format specifiers) - Similar to the 'login_user' function, if an attacker can control 'user_input' and inject format specifiers, it could lead to information disclosure or arbitrary code execution.
+
+}
+
+void unsafe_file_access() {
+    char config_path[100];
+    printf("Enter path to config file: ");
+    scanf("%s", config_path); // Vulnerability: Path Traversal / Buffer Overflow - 'scanf("%s", ...)' is vulnerable to buffer overflow. Additionally, an attacker could use path traversal sequences (e.g., "../../") to access or manipulate files outside the intended directory.
+
+    if (access(config_path, F_OK) == 0) { // Vulnerability: Time-of-check to Time-of-use (TOCTOU) Race Condition - There's a small window between checking if the file exists ('access') and opening it ('fopen'). An attacker could exploit this by deleting or replacing the file in that window, leading to unexpected behavior or opening a malicious file.
+        FILE *fp = fopen(config_path, "r");
+        if (fp) {
+            char buffer[100];
+            fread(buffer, sizeof(char), 100, fp); // Vulnerability: Buffer Overflow - If the content of the config file is larger than 100 bytes, 'fread' will write past the end of 'buffer', leading to a buffer overflow.
+            printf("Read config: %s\n", buffer); // Vulnerability: Format String Vulnerability - If 'buffer' contains format specifiers and is directly printed, it can lead to information disclosure or arbitrary code execution.
+            fclose(fp);
+        }
+    } else {
+        printf("Config file not found.\n");
+    }
+}
